@@ -19,8 +19,21 @@ func main() {
 
 	todos := []Todo{}
 
+	// get all todos
 	app.Get("/api/todos", func(c *fiber.Ctx) error {
 		return c.Status(200).JSON(todos)
+	})
+
+	// get a todo
+	app.Get("/api/todos/:id", func(c *fiber.Ctx) error {
+		id := c.Params("id")
+		for i, todo := range todos {
+			if fmt.Sprint(todo.ID) == id {
+				return c.Status(200).JSON(todos[i])
+			}
+		}
+
+		return c.Status(404).JSON(fiber.Map{"error": "Todo not found"})
 	})
 
 	// post a todo
