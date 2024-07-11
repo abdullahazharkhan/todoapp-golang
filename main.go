@@ -9,12 +9,13 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/joho/godotenv"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type Todo struct {
-	ID        int    `json:"_id" bson: "_id"`
+	ID        primitive.ObjectID    `json:"id,omitempty" bson: "_id,omitempty"`
 	Completed bool   `json:"completed"`
 	Body      string `json:"body"`
 }
@@ -50,8 +51,8 @@ func main() {
 	app := fiber.New()
 
 	app.Get("/api/todos", getTodos)
-	// app.Post("/api/todos", postTodos)
-	// app.Patch("/api/todos/:id", updateTodos)
+	app.Post("/api/todos", postTodos)
+	app.Patch("/api/todos/:id", updateTodos)
 	// app.Delete("/api/todos/:id", deleteTodos)
 
 	port := os.Getenv("PORT")
@@ -87,12 +88,36 @@ func getTodos(c *fiber.Ctx) error {
 	return c.JSON(todos)
 }
 
-// func postTodos(c *fiber.Ctx) error {
+func postTodos(c *fiber.Ctx) error {
+	todo := new(Todo) // {id: 0, completed: false, body: ""}
 
-// }
-// func updateTodos(c *fiber.Ctx) error {
+	if err := c.BodyParser(todo); err != nil {
+		return c.Status(400).JSON(fiber.Map{
+			"message": "Error parsing request",
+		})
+	}
 
-// }
+	if todo.Body == "" {
+		return c.Status(400).JSON(fiber.Map{
+			"message": "Body is required",
+		})
+	}
+
+	insertResult, err := collection.InsertOne(context.Background(), todo)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{
+			"message": "Error inserting todo",
+		})
+	}
+
+	todo.ID = insertResult.InsertedID.(primitive.ObjectID)
+
+	return c.Status(201).JSON(todo)
+}
+
+func updateTodos(c *fiber.Ctx) error {
+
+}
 // func deleteTodos(c *fiber.Ctx) error {
 
 // }
